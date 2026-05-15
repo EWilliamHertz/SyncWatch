@@ -173,6 +173,26 @@ export default function Dashboard() {
     const data = await res.json();
     setSelectedShow({ ...item, fullDetails: data });
   };
+  // NEW: Quick Add Function for Previous Partners
+  const handleQuickAdd = async (username: string) => {
+    if (selectedPartners.find(p => p.username === username)) return;
+    
+    const toastId = toast.loading(`Adding ${username}...`);
+    try {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      const userObj = data.find((u: any) => u.username.toLowerCase() === username.toLowerCase());
+      
+      if (userObj) {
+        setSelectedPartners(prev => [...prev, userObj]);
+        toast.success(`${username} added!`, { id: toastId });
+      } else {
+        toast.error("User not found", { id: toastId });
+      }
+    } catch (e) {
+      toast.error("Error adding user", { id: toastId });
+    }
+  };
 
  // --- DERIVED RENDER DATA ---
   const allKnownPartners = Array.from(new Set(shows.flatMap(s => s.coWatchers.filter((w: string) => w !== currentUser))));
@@ -314,11 +334,16 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm font-medium text-emerald-400 flex items-center gap-1 cursor-pointer" onClick={() => setEditingShow(show)}>
-                        <Edit2 size={14} className="text-neutral-500 hover:text-white" /> {show.episodesWatched} / {show.totalEpisodes} Eps
+                        <Edit2 size={14} className="text-neutral-500 hover:text-white" /> 
+                        {show.type === 'Movie' 
+                          ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
+                          : `${show.episodesWatched} / ${show.totalEpisodes} Eps`}
                       </span>
-                      <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
-                        <Plus size={18} />
-                      </button>
+                      {show.type !== 'Movie' && (
+                        <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
+                          <Plus size={18} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -435,7 +460,7 @@ export default function Dashboard() {
                       {watchMode === 'partner' && (
                         <div className="space-y-3">
                           <div className="relative">
-                            <input type="text" value={friendSearch} onChange={(e) => setFriendSearch(e.target.value)} placeholder="Search database for usernames..." className="w-full bg-neutral-900 border border-neutral-700 text-white rounded-lg px-4 py-3 pl-10 focus:border-blue-500" />
+                            <input type="text" value={friendSearch} onChange={(e) => setFriendSearch(e.target.value)} placeholder="Search database for usernames..." className="w-full bg-neutral-900 border border-neutral-700 text-white rounded-lg px-4 py-3 pl-10 focus:outline-none focus:border-blue-500 transition-colors" />
                             <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
                             {userResults.length > 0 && (
                               <div className="absolute top-full left-0 w-full mt-1 bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -448,11 +473,32 @@ export default function Dashboard() {
                               </div>
                             )}
                           </div>
+                          
+                          {/* QUICK SELECT PREVIOUS PARTNERS */}
+                          {allKnownPartners.filter(p => !selectedPartners.find(sp => sp.username === p)).length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 bg-neutral-950/50 p-2 rounded-lg border border-neutral-800/50">
+                              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider ml-1">Quick Add:</span>
+                              {allKnownPartners.filter(p => !selectedPartners.find(sp => sp.username === p)).map(partner => (
+                                <button 
+                                  key={partner} 
+                                  onClick={() => handleQuickAdd(partner)} 
+                                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-full text-xs font-medium transition-colors flex items-center gap-1"
+                                >
+                                  <Plus size={12} /> {partner}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* SELECTED PARTNERS PILLS */}
                           {selectedPartners.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-800/50">
                               {selectedPartners.map(p => (
-                                <span key={p.id} className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                                  {p.username} <button onClick={() => setSelectedPartners(selectedPartners.filter(x => x.id !== p.id))} className="hover:text-blue-200"><X size={14}/></button>
+                                <span key={p.id} className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-sm flex items-center gap-2 animate-in fade-in zoom-in-95">
+                                  {p.username} 
+                                  <button onClick={() => setSelectedPartners(selectedPartners.filter(x => x.id !== p.id))} className="hover:text-blue-200 transition-colors">
+                                    <X size={14}/>
+                                  </button>
                                 </span>
                               ))}
                             </div>
