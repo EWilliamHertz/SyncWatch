@@ -100,11 +100,21 @@ function DetailsContent() {
       totalWatched = pastEpisodes + Number(episodeInput);
     }
 
+    let determinedType = 'TV Series';
+    if (type === 'movie') {
+      determinedType = 'Movie';
+    } else {
+      const isAnime = details.original_language === 'ja' || details.languages?.includes('ja');
+      const isCartoon = !isAnime && details.genres?.some((g: any) => g.id === 16);
+      if (isAnime) determinedType = 'Anime';
+      else if (isCartoon) determinedType = 'Cartoon';
+    }
+
     // Prepare Database Payload
     const payload = {
       tmdbId: details.id,
       title: details.name || details.title,
-      type: type === 'movie' ? 'Movie' : 'TV Series',
+      type: determinedType,
       poster: details.poster_path,
       episodesWatched: totalWatched,
       totalEpisodes: details.number_of_episodes || 1,

@@ -99,12 +99,23 @@ export default function Dashboard() {
       displayYear = startYear ? `${startYear} - ${endYear}` : "";
     }
 
+    // Accurately determine the exact media type
+    let determinedType = 'TV Series';
+    if (selectedShow.media_type === 'movie') {
+      determinedType = 'Movie';
+    } else {
+      const isAnime = selectedShow.original_language === 'ja';
+      const isCartoon = !isAnime && (selectedShow.genre_ids?.includes(16) || details.genres?.some((g: any) => g.id === 16));
+      if (isAnime) determinedType = 'Anime';
+      else if (isCartoon) determinedType = 'Cartoon';
+    }
+
     const payload = {
       tmdbId: selectedShow.id,
       title: selectedShow.name || selectedShow.title,
-      type: selectedShow.media_type === 'movie' ? 'Movie' : 'TV Series',
+      type: determinedType,
       poster: selectedShow.poster_path,
-      year: displayYear, // Add it to the payload
+      year: displayYear,
       episodesWatched: totalWatched,
       totalEpisodes: details.number_of_episodes || 1,
       currentSeason: progressMode === 'fresh' ? 1 : Number(seasonInput),
@@ -212,7 +223,15 @@ export default function Dashboard() {
   
   const filteredShows = shows.filter(show => {
     if (statusFilter !== "All" && show.status !== statusFilter) return false;
-    if (typeFilter !== "All" && !show.type.includes(typeFilter.replace('Japanese ', '').replace('TV-Series', 'TV'))) return false;
+    
+    // Exact match filtering
+    if (typeFilter !== "All") {
+      if (typeFilter === "Movies" && show.type !== "Movie") return false;
+      if (typeFilter === "TV Series" && show.type !== "TV Series") return false;
+      if (typeFilter === "Anime" && show.type !== "Anime") return false;
+      if (typeFilter === "Cartoons" && show.type !== "Cartoon") return false;
+    }
+
     if (activePartnerFilters.length > 0) {
       const hasAllSelected = activePartnerFilters.every(f => show.coWatchers.includes(f));
       if (!hasAllSelected) return false;
@@ -294,7 +313,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <span className="text-sm font-bold text-neutral-500 uppercase tracking-wider w-24">Category</span>
             <div className="flex flex-wrap gap-2">
-              {['All', 'Japanese Anime', 'TV-Series', 'Cartoons', 'Movies'].map(type => (
+              {['All', 'Anime', 'TV Series', 'Cartoons', 'Movies'].map(type => (
                 <button key={type} onClick={() => setTypeFilter(type)} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${typeFilter === type ? 'bg-cyan-500 text-neutral-950' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'}`}>{type}</button>
               ))}
             </div>
