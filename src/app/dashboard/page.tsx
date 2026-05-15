@@ -87,11 +87,24 @@ export default function Dashboard() {
       totalWatched = pastEpisodes + Number(episodeInput);
     }
 
+    // Calculate the formatted Year String
+    let displayYear = "";
+    if (selectedShow.media_type === 'movie') {
+      displayYear = details.release_date ? details.release_date.split('-')[0] : "";
+    } else {
+      const startYear = details.first_air_date ? details.first_air_date.split('-')[0] : "";
+      const endYear = (details.status === "Ended" || details.status === "Canceled") 
+        ? (details.last_air_date ? details.last_air_date.split('-')[0] : "") 
+        : "Present";
+      displayYear = startYear ? `${startYear} - ${endYear}` : "";
+    }
+
     const payload = {
       tmdbId: selectedShow.id,
       title: selectedShow.name || selectedShow.title,
       type: selectedShow.media_type === 'movie' ? 'Movie' : 'TV Series',
       poster: selectedShow.poster_path,
+      year: displayYear, // Add it to the payload
       episodesWatched: totalWatched,
       totalEpisodes: details.number_of_episodes || 1,
       currentSeason: progressMode === 'fresh' ? 1 : Number(seasonInput),
@@ -320,7 +333,9 @@ export default function Dashboard() {
                   <div className="flex flex-col justify-between flex-1 py-1">
                     <div>
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{show.type}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                          {show.type} {show.year && <span className="text-neutral-600 font-bold px-1">• {show.year}</span>}
+                        </span>
                         <div className="flex flex-col items-end gap-1">
                           {showPartners.length > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-900/50 bg-blue-500/10 text-blue-400">{showPartners.join(', ')}</span>}
                           {show.pendingWatchers?.length > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-yellow-900/50 bg-yellow-500/10 text-yellow-500">Waiting on: {show.pendingWatchers.join(', ')}</span>}
@@ -328,8 +343,15 @@ export default function Dashboard() {
                       </div>
                       <h2 className="text-lg font-bold leading-tight line-clamp-2 text-white">{show.title}</h2>
                       <div className="mt-1">
-                        <p className="text-xs text-neutral-300 font-medium">{show.status}</p>
-                        {show.type !== 'Movie' && <p className="text-xs text-emerald-400 font-bold tracking-wider mt-0.5">Eps: {show.episodesWatched}</p>}
+                        <p className={`text-xs font-medium ${
+                          show.status === 'Plan to Watch' ? 'text-emerald-400' :
+                          show.status === 'Watched' ? 'text-yellow-400' :
+                          show.status === 'Watching' ? 'text-blue-400' :
+                          show.status === 'Dropped' ? 'text-red-400' : 'text-neutral-300'
+                        }`}>
+                          {show.status}
+                        </p>
+                        {show.type !== 'Movie' && <p className="text-xs text-neutral-500 font-bold tracking-wider mt-0.5">Eps: {show.episodesWatched}</p>}
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-2">
@@ -364,7 +386,19 @@ export default function Dashboard() {
               {inviteModalOpen.showPoster && <img src={`https://image.tmdb.org/t/p/w300${inviteModalOpen.showPoster}`} className="w-48 rounded-xl shadow-2xl shrink-0" />}
               <div className="flex flex-col flex-1">
                 <span className="text-emerald-400 font-bold uppercase tracking-widest text-xs mb-2">From {inviteModalOpen.sender}</span>
-                <h3 className="text-3xl font-extrabold mb-4">{inviteModalOpen.showTitle}</h3>
+                <h3 className="text-3xl font-extrabold mb-3">{inviteModalOpen.showTitle}</h3>
+                
+                {/* NEW: Media Details Row */}
+                <div className="flex flex-wrap items-center gap-3 mb-8 text-sm font-medium">
+                  <span className="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded-full text-emerald-400 uppercase tracking-wider text-[10px]">
+                    {inviteModalOpen.type}
+                  </span>
+                  <span className="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded-full text-neutral-300 text-xs">
+                    {inviteModalOpen.type === 'Movie' 
+                      ? `${Math.floor((inviteModalOpen.runtime || 0) / 60)}h ${(inviteModalOpen.runtime || 0) % 60}m` 
+                      : `${inviteModalOpen.totalEpisodes} Episodes`}
+                  </span>
+                </div>
                 
                 <div className="mt-auto flex gap-4 w-full">
                   <button onClick={() => { executeAction(inviteModalOpen.id, 'reject'); setInviteModalOpen(null); toast.error("Declined."); }} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold bg-neutral-800 hover:bg-red-500 hover:text-white transition-colors">

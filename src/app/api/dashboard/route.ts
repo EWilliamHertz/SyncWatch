@@ -39,6 +39,10 @@ export async function GET() {
     id: show.id,
     showTitle: show.title,
     showPoster: show.poster,
+    type: show.type,
+    year: show.year, // Added year
+    totalEpisodes: show.totalEpisodes,
+    runtime: show.runtime,
     sender: show.coWatchers[0]?.username || "A friend"
   }));
 
@@ -56,8 +60,9 @@ export async function POST(req: Request) {
       tmdbId: data.tmdbId,
       title: data.title,
       type: data.type,
-      poster: data.poster,
-      status: data.status,
+      poster: data.poster,
+      year: data.year, // Save year to database
+      status: data.status,
       currentSeason: data.currentSeason,
       episodesWatched: data.episodesWatched,
       totalEpisodes: data.totalEpisodes,

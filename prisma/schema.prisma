@@ -22,6 +22,7 @@ model TrackedShow {
   title           String
   type            String
   poster          String?
+  year            String?  // NEW: Stores the formatted year string
   status          String   @default("Watching")
   currentSeason   Int      @default(1)
   episodesWatched Int      @default(0)
