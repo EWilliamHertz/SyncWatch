@@ -20,7 +20,7 @@ function DetailsContent() {
   // Add Flow State
   const [showAddFlow, setShowAddFlow] = useState(false);
   const [watchMode, setWatchMode] = useState<"solo" | "partner">("solo");
-  const [progressMode, setProgressMode] = useState<"fresh" | "progress" | null>(null);
+  const [progressMode, setProgressMode] = useState<"fresh" | "progress" | "completed" | null>(null);
   const [seasonInput, setSeasonInput] = useState<number | string>(1);
   const [episodeInput, setEpisodeInput] = useState<number | string>(1);
 
