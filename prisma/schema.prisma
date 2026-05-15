@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(cuid())
+  username       String        @unique
+  email          String        @unique
+  password       String
+  shows          TrackedShow[] @relation("ShowCoWatchers")
+  pendingInvites TrackedShow[] @relation("PendingShowWatchers")
+}
+
+model TrackedShow {
+  id              String   @id @default(cuid())
+  tmdbId          Int
+  title           String
+  type            String
+  poster          String?
+  status          String   @default("Watching")
+  currentSeason   Int      @default(1)
+  episodesWatched Int      @default(0)
+  totalEpisodes   Int      @default(1)
+  runtime         Int      @default(45)
+  coWatchers      User[]   @relation("ShowCoWatchers")
+  pendingUsers    User[]   @relation("PendingShowWatchers")
+  updatedAt       DateTime @updatedAt
+}
