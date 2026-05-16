@@ -394,18 +394,19 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-medium text-emerald-400 flex items-center gap-1 cursor-pointer" onClick={() => setEditingShow(show)}>
-                        <Edit2 size={14} className="text-neutral-500 hover:text-white" /> 
-                        {show.type === 'Movie' 
-                          ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
-                          : `S${show.currentSeason} E${show.currentEpisode}`}
-                      </span>
-                      {show.type !== 'Movie' && (
-                        <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
-                          <Plus size={18} />
-                        </button>
-                      )}
-                    </div>
+                      <span className="text-sm font-medium text-emerald-400 flex items-center gap-1 cursor-pointer" onClick={() => setEditingShow(show)}>
+                        <Edit2 size={14} className="text-neutral-500 hover:text-white" /> 
+                        {show.type === 'Movie' 
+                          ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
+                          : `S${show.currentSeason} E${show.currentEpisode}`}
+                      </span>
+                      {/* Only show the plus button if it's NOT a movie AND we haven't finished all episodes! */}
+                      {show.type !== 'Movie' && show.episodesWatched < show.totalEpisodes && (
+                        <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
+                          <Plus size={18} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
