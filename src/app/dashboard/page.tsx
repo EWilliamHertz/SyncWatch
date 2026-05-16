@@ -110,15 +110,16 @@ export default function Dashboard() {
       else if (isCartoon) determinedType = 'Cartoon';
     }
 
-    const payload = {
+   const payload = {
       tmdbId: selectedShow.id,
       title: selectedShow.name || selectedShow.title,
       type: determinedType,
       poster: selectedShow.poster_path,
-      year: displayYear,
+      year: displayYear, 
       episodesWatched: totalWatched,
       totalEpisodes: details.number_of_episodes || 1,
       currentSeason: progressMode === 'fresh' ? 1 : Number(seasonInput),
+      currentEpisode: progressMode === 'fresh' ? 1 : Number(episodeInput), // Added
       status: progressMode === 'completed' ? 'Watched' : 'Watching',
       runtime: details.episode_run_time?.[0] || details.runtime || 45,
       invitedUserIds: selectedPartners.map(p => p.id)
@@ -150,15 +151,19 @@ export default function Dashboard() {
   };
 
   const incrementEpisode = async (id: string) => {
-    // Optimistic UI update
-    setShows(shows.map(s => s.id === id ? { ...s, episodesWatched: s.episodesWatched + 1 } : s));
+    setShows(shows.map(s => s.id === id ? { ...s, episodesWatched: s.episodesWatched + 1, currentEpisode: s.currentEpisode + 1 } : s));
     toast.success("Progress saved & synced!");
     await executeAction(id, 'increment');
   };
 
   const saveEdits = async () => {
     toast.success("Updating database...");
-    await executeAction(editingShow.id, 'edit', { status: editingShow.status, episodesWatched: editingShow.episodesWatched });
+    await executeAction(editingShow.id, 'edit', { 
+      status: editingShow.status, 
+      episodesWatched: editingShow.episodesWatched,
+      currentSeason: editingShow.currentSeason,
+      currentEpisode: editingShow.currentEpisode
+    });
     setEditingShow(null);
   };
 
@@ -217,7 +222,22 @@ export default function Dashboard() {
       toast.error("Error adding user", { id: toastId });
     }
   };
+// --- STATS MODAL LOGIC ---
+  const [statsTypeFilters, setStatsTypeFilters] = useState<string[]>([]);
+  const [statsStatusFilters, setStatsStatusFilters] = useState<string[]>([]);
+  
+  const toggleStatsType = (t: string) => setStatsTypeFilters(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  const toggleStatsStatus = (s: string) => setStatsStatusFilters(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
+  const statsFilteredShows = shows.filter(show => {
+    if (statsStatusFilters.length > 0 && !statsStatusFilters.includes(show.status)) return false;
+    if (statsTypeFilters.length > 0 && !statsTypeFilters.includes(show.type)) return false;
+    return true;
+  });
+
+  const statsWatchedMinutes = statsFilteredShows.reduce((acc, show) => acc + (show.episodesWatched * (show.runtime || 45)), 0);
+  const statsLeftMinutes = statsFilteredShows.reduce((acc, show) => acc + (Math.max(0, show.totalEpisodes - show.episodesWatched) * (show.runtime || 45)), 0);
+  
  // --- DERIVED RENDER DATA ---
   const allKnownPartners = Array.from(new Set(shows.flatMap(s => s.coWatchers.filter((w: string) => w !== currentUser))));
   
@@ -370,7 +390,7 @@ export default function Dashboard() {
                         }`}>
                           {show.status}
                         </p>
-                        {show.type !== 'Movie' && <p className="text-xs text-neutral-500 font-bold tracking-wider mt-0.5">Eps: {show.episodesWatched}</p>}
+{show.type !== 'Movie' && <p className="text-xs text-neutral-500 font-bold tracking-wider mt-0.5">Season {show.currentSeason} • Episode {show.currentEpisode}</p>}
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-2">
@@ -378,7 +398,7 @@ export default function Dashboard() {
                         <Edit2 size={14} className="text-neutral-500 hover:text-white" /> 
                         {show.type === 'Movie' 
                           ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
-                          : `${show.episodesWatched} / ${show.totalEpisodes} Eps`}
+                          : `S${show.currentSeason} E${show.currentEpisode}`}
                       </span>
                       {show.type !== 'Movie' && (
                         <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
@@ -448,8 +468,20 @@ export default function Dashboard() {
                   {['Watching', 'Watched', 'Plan to Watch', 'Dropped'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              {editingShow.type !== 'Movie' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-neutral-400 mb-1">Season</label>
+                    <input type="number" min="1" value={editingShow.currentSeason} onChange={(e) => setEditingShow({...editingShow, currentSeason: parseInt(e.target.value) || 1})} className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg px-4 py-2 focus:border-cyan-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-neutral-400 mb-1">Current Episode</label>
+                    <input type="number" min="0" value={editingShow.currentEpisode} onChange={(e) => setEditingShow({...editingShow, currentEpisode: parseInt(e.target.value) || 0})} className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg px-4 py-2 focus:border-cyan-500" />
+                  </div>
+                </div>
+              )}
               <div>
-                <label className="block text-sm font-bold text-neutral-400 mb-1">Total Episodes Watched</label>
+                <label className="block text-sm font-bold text-neutral-400 mb-1">Total Episodes Watched (For Stats)</label>
                 <input type="number" min="0" value={editingShow.episodesWatched} onChange={(e) => setEditingShow({...editingShow, episodesWatched: parseInt(e.target.value) || 0})} className="w-full bg-neutral-950 border border-neutral-700 text-white rounded-lg px-4 py-2 focus:border-cyan-500" />
               </div>
               <div className="pt-4 flex gap-3">
@@ -596,26 +628,56 @@ export default function Dashboard() {
       {/* STATISTICS MODAL */}
       {showStats && (
         <div className="fixed inset-0 z-50 bg-neutral-950/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-8 relative animate-in zoom-in-95 text-white">
-            <button onClick={() => setShowStats(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white"><X size={20} /></button>
-            <h2 className="text-2xl font-bold mb-8 flex items-center gap-3"><BarChart2 className="text-cyan-400" /> Watch Statistics</h2>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-2xl p-6 md:p-8 relative animate-in zoom-in-95 text-white max-h-[90vh] overflow-y-auto shadow-2xl border-t border-t-neutral-700">
+            <button onClick={() => setShowStats(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white bg-neutral-800 p-2 rounded-full"><X size={20} /></button>
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"><BarChart2 className="text-cyan-400" /> Watch Statistics</h2>
+            
+            {/* Multi-select Filters */}
+            <div className="mb-6 space-y-4 bg-neutral-950 p-5 rounded-xl border border-neutral-800">
+              <div>
+                <p className="text-xs font-bold text-neutral-500 uppercase mb-2">Category Filter</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Anime', 'TV Series', 'Cartoons', 'Movies'].map(type => (
+                    <button key={type} onClick={() => toggleStatsType(type)} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${statsTypeFilters.includes(type) ? 'bg-cyan-500 text-neutral-950 shadow-lg shadow-cyan-500/20' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'}`}>{type}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-full h-px bg-neutral-800/50"></div>
+              <div>
+                <p className="text-xs font-bold text-neutral-500 uppercase mb-2">Status Filter</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Watching', 'Watched', 'Plan to Watch', 'Dropped'].map(status => (
+                    <button key={status} onClick={() => toggleStatsStatus(status)} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${statsStatusFilters.includes(status) ? 'bg-emerald-500 text-neutral-950 shadow-lg shadow-emerald-500/20' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'}`}>{status}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-6">
               <div>
-                <p className="text-neutral-500 text-sm font-bold uppercase mb-1">Total Titles</p>
-                <p className="text-3xl font-bold">{shows.length}</p>
+                <p className="text-neutral-500 text-sm font-bold uppercase mb-1">Titles matching filters</p>
+                <p className="text-3xl font-bold text-white">{statsFilteredShows.length}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-                  <p className="text-neutral-500 text-xs font-bold uppercase mb-1">Total Minutes</p>
-                  <p className="text-xl font-bold text-emerald-400">{totalMinutes}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Watched Stats */}
+                <div className="bg-neutral-950 p-5 rounded-xl border border-emerald-500/30 relative overflow-hidden shadow-inner">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                  <p className="text-emerald-500 text-sm font-bold uppercase mb-4">Time Watched</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center"><span className="text-neutral-400 text-sm font-medium">Hours</span><span className="font-bold text-lg text-white">{(statsWatchedMinutes / 60).toFixed(1)}h</span></div>
+                    <div className="flex justify-between items-center"><span className="text-neutral-400 text-sm font-medium">Days of Life</span><span className="font-bold text-emerald-400 text-lg">{(statsWatchedMinutes / 1440).toFixed(1)} Days</span></div>
+                  </div>
                 </div>
-                <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800">
-                  <p className="text-neutral-500 text-xs font-bold uppercase mb-1">Total Hours</p>
-                  <p className="text-xl font-bold text-cyan-400">{totalHours}</p>
-                </div>
-                <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 col-span-2">
-                  <p className="text-neutral-500 text-xs font-bold uppercase mb-1">Total Days of Life Spent</p>
-                  <p className="text-2xl font-bold text-blue-400">{totalDays} Days</p>
+
+                {/* Left to Watch Stats */}
+                <div className="bg-neutral-950 p-5 rounded-xl border border-blue-500/30 relative overflow-hidden shadow-inner">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                  <p className="text-blue-500 text-sm font-bold uppercase mb-4">Left to Watch</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center"><span className="text-neutral-400 text-sm font-medium">Hours</span><span className="font-bold text-lg text-white">{(statsLeftMinutes / 60).toFixed(1)}h</span></div>
+                    <div className="flex justify-between items-center"><span className="text-neutral-400 text-sm font-medium">Days Required</span><span className="font-bold text-blue-400 text-lg">{(statsLeftMinutes / 1440).toFixed(1)} Days</span></div>
+                  </div>
                 </div>
               </div>
             </div>

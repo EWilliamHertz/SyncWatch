@@ -59,11 +59,12 @@ export async function POST(req: Request) {
     data: {
       tmdbId: data.tmdbId,
       title: data.title,
-      type: data.type,
-      poster: data.poster,
-      year: data.year, // Save year to database
-      status: data.status,
+type: data.type,
+      poster: data.poster,
+      year: data.year, 
+      status: data.status,
       currentSeason: data.currentSeason,
+      currentEpisode: data.currentEpisode, // Added
       episodesWatched: data.episodesWatched,
       totalEpisodes: data.totalEpisodes,
       runtime: data.runtime,
@@ -79,10 +80,13 @@ export async function PUT(req: Request) {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { showId, action, status, episodesWatched } = await req.json();
+  const { showId, action, status, episodesWatched, currentSeason, currentEpisode } = await req.json();
 
   if (action === 'increment') {
-    await prisma.trackedShow.update({ where: { id: showId }, data: { episodesWatched: { increment: 1 } } });
+    await prisma.trackedShow.update({ 
+      where: { id: showId }, 
+      data: { episodesWatched: { increment: 1 }, currentEpisode: { increment: 1 } } 
+    });
   } else if (action === 'accept') {
     await prisma.trackedShow.update({
       where: { id: showId },
@@ -96,7 +100,7 @@ export async function PUT(req: Request) {
   } else if (action === 'edit') {
     await prisma.trackedShow.update({
       where: { id: showId },
-      data: { status, episodesWatched }
+      data: { status, episodesWatched, currentSeason, currentEpisode }
     });
   } else if (action === 'delete') {
     await prisma.trackedShow.delete({ where: { id: showId } });

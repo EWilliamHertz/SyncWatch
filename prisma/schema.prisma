@@ -25,7 +25,8 @@ model TrackedShow {
   year            String?  // NEW: Stores the formatted year string
   status          String   @default("Watching")
   currentSeason   Int      @default(1)
-  episodesWatched Int      @default(0)
+  currentEpisode  Int      @default(0)  // NEW: Tracks episode in the current season
+  episodesWatched Int      @default(0)  // Keeps total for your Time Watched statistics!
   totalEpisodes   Int      @default(1)
   runtime         Int      @default(45)
   coWatchers      User[]   @relation("ShowCoWatchers")

@@ -119,6 +119,7 @@ function DetailsContent() {
       episodesWatched: totalWatched,
       totalEpisodes: details.number_of_episodes || 1,
       currentSeason: progressMode === 'fresh' ? 1 : Number(seasonInput),
+      currentEpisode: progressMode === 'fresh' ? 1 : Number(episodeInput), // Added
       status: progressMode === 'completed' ? 'Watched' : 'Watching',
       runtime: details.episode_run_time?.[0] || details.runtime || 45,
       invitedUserIds: selectedPartners.map(p => p.id)
