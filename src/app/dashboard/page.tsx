@@ -363,26 +363,26 @@ export default function Dashboard() {
             <p className="text-neutral-400 max-w-md mx-auto text-lg">Use the search bar above to find new series or movies.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredShows.map(show => {
               const showPartners = show.coWatchers.filter((w: string) => w !== currentUser);
               return (
-                <div key={show.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-600 rounded-xl p-4 shadow-lg flex gap-4 relative group">
-                  {show.poster ? <img src={`https://image.tmdb.org/t/p/w200${show.poster}`} className="w-24 h-36 object-cover rounded-md shadow-md" /> : <div className="w-24 h-36 bg-neutral-800 rounded-md"></div>}
-                  <div className="flex flex-col justify-between flex-1 py-1">
+                <div key={show.id} className="bg-neutral-900 border border-neutral-800 hover:border-neutral-600 rounded-xl p-3 shadow-sm flex gap-3 relative group transition-colors">
+                  {show.poster ? <img src={`https://image.tmdb.org/t/p/w200${show.poster}`} className="w-16 h-24 object-cover rounded-md shadow-sm shrink-0" /> : <div className="w-16 h-24 bg-neutral-800 rounded-md shrink-0"></div>}
+                  <div className="flex flex-col justify-between flex-1">
                     <div>
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                          {show.type} {show.year && <span className="text-neutral-600 font-bold px-1">• {show.year}</span>}
+                      <div className="flex justify-between items-start mb-0.5">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-500 line-clamp-1">
+                          {show.type} {show.year && <span className="text-neutral-600 font-bold px-0.5">• {show.year}</span>}
                         </span>
-                        <div className="flex flex-col items-end gap-1">
-                          {showPartners.length > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-blue-900/50 bg-blue-500/10 text-blue-400">{showPartners.join(', ')}</span>}
-                          {show.pendingWatchers?.length > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded border border-yellow-900/50 bg-yellow-500/10 text-yellow-500">Waiting on: {show.pendingWatchers.join(', ')}</span>}
+                        <div className="flex flex-col items-end gap-0.5 shrink-0">
+                          {showPartners.length > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-blue-900/50 bg-blue-500/10 text-blue-400 leading-none">{showPartners.join(', ')}</span>}
+                          {show.pendingWatchers?.length > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-yellow-900/50 bg-yellow-500/10 text-yellow-500 leading-none">Wait: {show.pendingWatchers.join(', ')}</span>}
                         </div>
                       </div>
-                      <h2 className="text-lg font-bold leading-tight line-clamp-2 text-white">{show.title}</h2>
-                      <div className="mt-1">
-                        <p className={`text-xs font-medium ${
+                      <h2 className="text-base font-bold leading-tight line-clamp-2 text-white mb-0.5">{show.title}</h2>
+                      <div>
+                        <p className={`text-[11px] font-medium leading-none ${
                           show.status === 'Plan to Watch' ? 'text-emerald-400' :
                           show.status === 'Watched' ? 'text-yellow-400' :
                           show.status === 'Watching' ? 'text-blue-400' :
@@ -390,23 +390,22 @@ export default function Dashboard() {
                         }`}>
                           {show.status}
                         </p>
-{show.type !== 'Movie' && <p className="text-xs text-neutral-500 font-bold tracking-wider mt-0.5">Season {show.currentSeason} • Episode {show.currentEpisode}</p>}
+                        {show.type !== 'Movie' && <p className="text-[10px] text-neutral-500 font-bold tracking-wider mt-1 leading-none">S{show.currentSeason} • E{show.currentEpisode}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-medium text-emerald-400 flex items-center gap-1 cursor-pointer" onClick={() => setEditingShow(show)}>
-                        <Edit2 size={14} className="text-neutral-500 hover:text-white" /> 
-                        {show.type === 'Movie' 
-                          ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
-                          : `S${show.currentSeason} E${show.currentEpisode}`}
-                      </span>
-                      {/* Only show the plus button if it's NOT a movie AND we haven't finished all episodes! */}
-                      {show.type !== 'Movie' && show.episodesWatched < show.totalEpisodes && (
-                        <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-2 rounded-lg transition-colors shadow-lg">
-                          <Plus size={18} />
-                        </button>
-                      )}
-                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-800/50">
+                      <span className="text-xs font-medium text-emerald-400 flex items-center gap-1 cursor-pointer" onClick={() => setEditingShow(show)}>
+                        <Edit2 size={12} className="text-neutral-500 hover:text-white" /> 
+                        {show.type === 'Movie' 
+                          ? `${Math.floor((show.runtime || 0) / 60)}h ${(show.runtime || 0) % 60}m` 
+                          : `${show.episodesWatched}/${show.totalEpisodes} Eps`}
+                      </span>
+                      {show.type !== 'Movie' && show.episodesWatched < show.totalEpisodes && (
+                        <button onClick={() => incrementEpisode(show.id)} className="bg-neutral-800 hover:bg-emerald-500 hover:text-neutral-950 text-neutral-300 p-1.5 rounded-md transition-colors">
+                          <Plus size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
